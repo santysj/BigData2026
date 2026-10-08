@@ -52,7 +52,7 @@ mi-primer-proyecto/
 
 | Archivo | Contenido |
 |---|---|
-| `README.md` | Nombre, `student_id` usado en los notebooks y respuestas de la sección **Entrega breve** de `01_ingesta_bronze`: tres observaciones sobre CSV/JSON, Parquet y Delta, y dónde aparece cada una de las cinco V. Incluí también la reflexión final del desafío (máximo 150 palabras). |
+| `README.md` | Nombre, `student_id`, escala y respuestas de la sección **Entrega breve** de `01_ingesta_bronze`: tres observaciones sobre CSV/JSON, Parquet y Delta, y dónde aparece cada una de las cinco V. Si realizaste el desafío opcional, incluí también su reflexión final (máximo 150 palabras). |
 | `01_ingesta_bronze.ipynb` | Notebook ejecutado, con las salidas de las cuatro tablas Bronze y del diagnóstico de calidad. |
 | `02_desafio.ipynb` (OPCIONAL) | Notebook con las tres consignas resueltas y las aserciones ejecutadas sin errores. |
 
@@ -72,7 +72,7 @@ git commit -m "Entrega práctica 1"
 git push origin main
 ```
 
-Verificá en GitHub que el directorio y los tres archivos aparecen en `main`.
+Verificá en GitHub que el directorio, `README.md` y `01_ingesta_bronze.ipynb` aparecen en `main`. Incluí `02_desafio.ipynb` sólo si realizaste el desafío opcional.
 
 El repositorio tiene que ser **público** para que el docente pueda ver la entrega. Para comprobarlo, abrí su URL en una ventana privada del navegador, sin iniciar sesión: si ves `resolucion-practica-1`, está accesible. Si lo creaste como privado, cambialo desde **Settings → General → Danger Zone → Change repository visibility**.
 

@@ -183,7 +183,7 @@ Importar solamente los tres `.ipynb` no alcanza: las sentencias `%run` necesitan
 - Confirmá que clonaste o importaste la carpeta `practicas` completa.
 - Verificá que `common` y `clase-01` sean carpetas hermanas.
 - No muevas los notebooks fuera de `clase-01`.
-- En la solución docente, la ruta tiene dos niveles (`../../common`) porque el notebook está dentro de `docente`.
+- En las soluciones docentes de NoSQL y streaming, la ruta tiene dos niveles (`../../common`) porque esos notebooks están dentro de `docente`. Clase 1 todavía no publica una solución docente.
 
 ### El identificador es inválido
 

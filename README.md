@@ -4,7 +4,11 @@ Proyecto de Prueba de GitHub Actions y MLFlow
 
 ## Nueva práctica integrada en Databricks
 
-El piloto de la nueva secuencia práctica se encuentra en [`practicas/`](practicas/README.md). La primera clase incluye setup para Databricks Free Edition, generación de datos, ingesta CSV/JSON/Parquet, tablas Bronze en Delta y un desafío de evolución de esquema. Las carpetas históricas `clase-1` a `clase-4` se mantienen como referencia.
+La secuencia práctica se encuentra en [`practicas/`](practicas/README.md). La primera clase incluye setup para Databricks Free Edition, generación de datos, ingesta CSV/JSON/Parquet, tablas Bronze en Delta y un desafío de evolución de esquema. Están implementadas las clases 1–3; la clase 4 de MLOps sigue planificada.
+
+También está disponible una [práctica complementaria de NoSQL y modelado documental](practicas/nosql/README.md), con documentos JSON en Databricks, consultas SQL/PySpark y un desafío de evolución de esquema.
+
+La [clase práctica 3 de streaming](practicas/clase-03/README.md) continúa con las dimensiones Silver: Auto Loader, deduplicación, ventanas, watermarks, checkpoints y recuperación, con Job, preguntas y formato de entrega.
 
 Este proyecto fue creado con el objetivo de probar y demostrar cómo configurar y utilizar **GitHub Actions** en un entorno de desarrollo Python.
 Ademas como ejemplo para mostrar capacidades de MLflow 
@@ -12,7 +16,7 @@ Ademas como ejemplo para mostrar capacidades de MLflow
 Actions
 -------
 
-El propósito de este repositorio es realizar pruebas simples de integración continua (CI) usando **GitHub Actions**. Actualmente, el flujo de trabajo básico está configurado para ejecutar un script de Python en cada push a la rama `main`.
+Los ejemplos siguientes pertenecen al origen del proyecto, dedicado a pruebas de integración continua (CI) y MLflow. El estado actual del repositorio no incluye un workflow bajo `.github/workflows/`; estos ejemplos no son requisitos para ejecutar los TPs de Databricks.
 
 
 python -m prueba .venv   

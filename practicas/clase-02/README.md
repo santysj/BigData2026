@@ -109,6 +109,8 @@ Respondé las siguientes preguntas después de completar las ejecuciones con `ba
 
 ## Entrega
 
+La publicación, el acceso público y el envío a los profesores siguen el [formato común de entrega](../README.md#formato-común-de-entrega).
+
 En tu repositorio personal creá `resolucion-practica-2/` con:
 
 ```text
@@ -122,7 +124,7 @@ resolucion-practica-2/
 
 El `README.md` debe incluir:
 
-- Nombre y `student_id`.
+- Nombre, `student_id` y escala.
 - Captura del DAG del Job con las cuatro tareas.
 - URL del Job o su nombre exacto.
 - Resultados de la primera y segunda ejecución.
