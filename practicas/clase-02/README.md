@@ -9,7 +9,7 @@ Transformar las tablas Bronze de la práctica 1 en datos confiables y productos 
 - Aplicar contratos de tipos y reglas de calidad.
 - Separar registros válidos de una cuarentena explicable.
 - Resolver duplicados y correcciones con `MERGE`.
-- Construir tablas Gold con un grano de negocio explícito.
+- Construir tablas Gold.
 - Orquestar notebooks dependientes con Lakeflow Jobs.
 - Probar una carga nueva sin cambiar el código del pipeline.
 - Verificar reconciliación e idempotencia.
@@ -130,7 +130,6 @@ El `README.md` debe incluir:
 - Resultados de la primera y segunda ejecución.
 - Cantidades aceptadas y rechazadas para `batch_002`.
 - Explicación breve de por qué `COPY INTO` y `MERGE` resuelven problemas diferentes.
-- Explicación del grano de cada tabla Gold.
 - Las cuatro visualizaciones y una respuesta explícita para cada pregunta.
 - Respuestas a las 20 preguntas de análisis y comprensión, incluyendo las consultas utilizadas cuando corresponda.
 
