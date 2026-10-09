@@ -24,19 +24,18 @@ La práctica es **demostrativa y visual**. Databricks no es Redis, MongoDB, Neo4
 
 ## Secuencia
 
-Los notebooks son independientes entre sí (salvo el preflight) y se ejecutan manualmente, en orden, celda por celda. Leé el texto antes de cada celda y mirá cada gráfico: las preguntas se responden con lo que muestran.
+Los notebooks son **demostrativos**: no hay que modificar ni completar código. Se ejecutan en orden, celda por celda, leyendo el texto y mirando cada resultado y gráfico. Las preguntas de la entrega se responden con lo que muestran.
 
 | Notebook | Modelo | Qué se ve | Minutos |
 |---|---|---|---:|
 | `00_preflight.ipynb` | Relacional | Verifica las tablas Silver y muestra el punto de partida | 5 |
-| `01_cap_pacelc.ipynb` | Distribución | Tres réplicas, una partición, modos CP y AP; latencia vs. `W`; quórum `W+R>N` | 20 |
+| `01_cap_pacelc.ipynb` | Distribución | Réplicas con una partición, modos CP y AP; latencia vs. `W`; quórum `W+R>N` | 15 |
 | `02_clave_valor.ipynb` | Clave-valor | Perfiles `customer:<id>`; GET en memoria vs. Spark; hash mod N vs. hashing consistente | 20 |
-| `03_documental.ipynb` | Documental | Un documento por cliente con sus transacciones embebidas; consultas anidadas; esquema flexible; tamaño | 25 |
-| `04_grafos.ipynb` | Grafos | Clientes y dispositivos; Cypher vs. SQL; componentes conexos; dibujo; particionamiento | 25 |
-| `05_vectorial.ipynb` | Vectorial | Vectores de comportamiento; PCA; k-NN exacto; índice IVF y curva recall/costo | 25 |
-| `06_columnar.ipynb` | Columnar | Fila vs. columna; CSV/JSON/Parquet; plan físico; footer Parquet; data skipping | 20 |
+| `03_documental.ipynb` | Documental | Un documento por cliente con sus transacciones embebidas; consultas anidadas; esquema flexible; tamaño | 20 |
+| `04_grafos.ipynb` | Grafos | Clientes y dispositivos; Cypher vs. SQL; componentes conexos; dibujo; particionamiento | 20 |
+| `05_vectorial.ipynb` | Vectorial | Vectores de comportamiento; PCA; k-NN exacto; índice IVF y curva recall/costo | 20 |
+| `06_columnar.ipynb` | Columnar | Fila vs. columna; CSV/JSON/Parquet; plan físico; footer Parquet; data skipping | 15 |
 
-Cada notebook termina con una sección **Tu turno** que forma parte de la entrega.
 
 ## Tablas y archivos que se crean
 
@@ -53,78 +52,59 @@ landing/nosql_lab/columnar/             CSV, JSON y Parquet de las transacciones
 
 Ninguna tabla de las clases 1 y 2 se modifica. Todos los notebooks pueden reejecutarse: sobrescriben sus propias tablas y archivos.
 
-## Preguntas de comprensión
+## Preguntas
 
-Respondé en el `README.md` de la entrega. Cuando la pregunta pide un resultado, copiá el número o la tabla que obtuviste y explicá qué significa; cuando pide interpretación, alcanza con 3 a 6 oraciones. Indicá siempre el notebook y la sección en que te basás.
+Las preguntas son cortas: buscan comprobar que entendiste la idea de cada modelo y sus ventajas y desventajas. Cuando piden un dato, copiá el número que te dio el notebook (puede variar un poco según tu escala). Alcanza con una a tres oraciones por respuesta.
 
 ### CAP y PACELC (`01_cap_pacelc`)
 
-1. En el escenario de partición, ¿qué respondió la lectura desde `C` en modo CP y en modo AP? Relacioná cada resultado con la **C** y la **A** del teorema CAP.
-2. En modo AP, después de la reparación, ¿qué valor quedó en las tres réplicas y qué escritura se perdió? ¿Por qué *last-write-wins* es peligroso para un saldo? Mencioná una alternativa (por ejemplo, la estrategia de Dynamo de conservar versiones en conflicto).
-3. En el gráfico de latencia, ¿cuánto vale la p99 con `W=1` y con `W=3`? Explicá el resultado con la parte **ELC** de PACELC.
-4. Con `N=3` y con `N=5` (Tu turno), ¿qué combinaciones de `W` y `R` dieron probabilidad 0 de lectura vieja? Explicá por qué la condición es `W+R>N`.
+1. Con la red partida, ¿qué respondió la réplica `C` en modo CP y qué respondió en modo AP? ¿Qué propiedad de CAP sacrifica cada modo?
+2. En modo AP, ¿qué saldo quedó en las tres réplicas después de la reparación y qué escritura se perdió?
+3. Según el gráfico de latencia, ¿cuál es la p99 con `W=1` y con `W=3`? ¿Qué se gana a cambio de esperar más réplicas? (PACELC)
+4. Con cinco réplicas partidas en `ABC | DE`, ¿qué lado pudo seguir escribiendo en modo CP y por qué?
 
 ### Clave-valor (`02_clave_valor`)
 
-5. ¿Cuántas veces más rápido fue el GET en memoria que el GET con Spark? ¿Por qué Delta no reemplaza a Redis para servir el perfil de un cliente durante un pago, y por qué Redis no reemplaza a Delta para la analítica de la clase 2?
-6. Para contar los clientes de AR se parsearon todos los valores. ¿Por qué ocurre en un modelo clave-valor? ¿Qué estructura mantendrías en Redis para responder esa consulta?
-7. Completá la tabla del Tu turno. ¿Qué porcentaje de claves se mueve con `mod N` y con hashing consistente al pasar de 4 a 5 nodos? ¿Para qué sirven los nodos virtuales?
-8. La teoría presenta la función hash como el motor del modelo clave-valor **en dos niveles**. Identificá en el notebook dónde aparece cada nivel.
+5. ¿Cuántas veces más rápido fue el GET en memoria que el GET con Spark? ¿Por qué Redis guarda los datos en memoria?
+6. ¿Por qué para contar los clientes de AR hubo que leer y parsear todos los valores? Mencioná una ventaja y una desventaja del modelo clave-valor.
+7. Al pasar de 4 a 5 nodos, ¿qué porcentaje de claves se movió con `hash mod N` y con hashing consistente? ¿Por qué conviene el segundo?
 
 ### Documental (`03_documental`)
 
-9. ¿Qué datos quedaron **embebidos** en el documento del cliente y qué datos quedaron como **referencia**? ¿Por qué el producto se guarda como snapshot dentro de cada transacción? Mencioná una ventaja y un riesgo.
-10. Compará la consulta del historial del cliente 42 en el modelo relacional y en el documental: tablas leídas, joins y filas devueltas. ¿Para qué patrón de acceso conviene cada uno?
-11. ¿Por qué el monto por categoría obligó a usar `explode`? ¿Qué dice eso sobre diseñar documentos "a partir de las consultas"?
-12. ¿Qué esquema infirió Spark para los documentos heterogéneos? ¿Qué diferencia hay entre los documentos `900002` y `900003` respecto del email y por qué esa diferencia se pierde al leer con esquema?
-13. ¿Cuánto pesa el documento más grande y cuántas transacciones harían falta para llegar al límite de 16 MB de MongoDB? ¿Cómo rediseñarías el documento si un cliente pudiera tener millones de compras?
+8. ¿Cuántas filas devolvió la consulta relacional del cliente 42 y cuántos documentos la documental? ¿Qué datos quedaron embebidos dentro del documento?
+9. Al leer documentos con campos distintos, ¿qué hizo Spark con los campos que faltaban en algunos? ¿Por qué se dice que el modelo documental tiene esquema flexible?
+10. ¿Cuánto pesa el documento más grande? ¿Qué problema aparece si un documento crece sin límite?
+11. Para calcular el monto por categoría hubo que usar `explode`. ¿Qué tipo de consultas resuelve bien el modelo documental y cuáles le cuestan más?
 
 ### Grafos (`04_grafos`)
 
-14. Escribí el patrón de cuatro saltos del Tu turno en Cypher y en SQL. ¿Cuántos joins necesitaste para dos y para cuatro saltos? Explicá por qué Neo4j (*index-free adjacency*) no paga ese costo de la misma manera.
-15. ¿Qué porcentaje de clientes marcados hay entre todos los clientes y entre los conectados a un marcado por un dispositivo? ¿Qué conclusión sacás? Revisá cómo genera los datos `common/generate_data.py` (columnas `device_id` e `is_fraud`) y explicá si el resultado era esperable.
-16. ¿Cuántas iteraciones tardó en converger la propagación de etiquetas y qué relación tiene ese número con la cantidad de saltos del componente más largo? ¿Por qué este cálculo es OLAP de grafos y no una consulta OLTP?
-17. ¿Qué porcentaje de aristas quedó entre máquinas distintas con `hash(id) mod 4` y con el particionamiento por componente? ¿Por qué un grafo real (una red social, por ejemplo) no puede particionarse tan limpiamente como en este ejemplo?
+12. ¿Cuántos nodos `Customer`, nodos `Device` y aristas `USES` tiene el grafo?
+13. ¿Cuántos joins necesitó SQL para el patrón de 2 saltos y para el de 4? ¿Por qué Neo4j recorre relaciones más eficientemente que una base relacional?
+14. ¿Cuántas iteraciones tardó en converger la búsqueda de componentes conexos y cuántos nodos tiene el componente más grande?
+15. ¿Qué porcentaje de aristas quedó entre máquinas distintas al repartir los nodos con `hash(id) mod 4`? ¿Por qué es difícil distribuir una base de grafos?
 
 ### Vectorial (`05_vectorial`)
 
-18. ¿Qué proporción de marcados hay entre los vecinos de clientes marcados y entre los vecinos de no marcados, comparada con la tasa base? La exactitud del clasificador k-NN, ¿es mejor que predecir siempre "no marcado"? ¿Qué te dice esto sobre la exactitud como métrica y sobre la calidad de estos vectores? Usá también el resultado del Tu turno 2.
-19. En la curva del índice IVF, ¿qué `nprobe` necesitás para un recall@10 ≥ 0,9 y qué porcentaje de vectores se comparan? Explicá el trade-off de ANN e indicá qué pasa cuando se insertan vectores nuevos con una distribución distinta.
+16. ¿Qué representa el vector de cada cliente y qué mide la similitud coseno?
+17. ¿Qué porcentaje de clientes marcados hay entre los vecinos de clientes marcados y cuál es la tasa base? ¿Para qué sirve buscar "vecinos parecidos"?
+18. En la curva del índice IVF, ¿qué recall y qué porcentaje de vectores escaneados se obtienen con `nprobe=4`? ¿Qué se gana y qué se pierde con la búsqueda aproximada (ANN)?
 
 ### Columnar (`06_columnar`)
 
-20. Reportá el tamaño de los tres formatos y la tasa de compresión Parquet/CSV. ¿Qué muestra el `ReadSchema` de la consulta sobre Parquet y cómo cambia con la consulta del Tu turno? ¿Cuántos archivos se pueden saltear con datos al azar y con datos ordenados? Relacioná estos tres efectos con por qué Delta es buena para analítica y mala para actualizar una fila por vez.
-
-### Cierre: tabla de decisión
-
-Completá la tabla eligiendo un modelo y un motor para cada necesidad de la plataforma de e-commerce, con una justificación de una línea. Incluí la clasificación CAP/PACELC del motor elegido según la teoría.
-
-| Necesidad | Modelo | Motor | CAP / PACELC | Justificación |
-|---|---|---|---|---|
-| Carrito de compras y sesión del usuario | | | | |
-| Ficha de producto con atributos distintos por categoría | | | | |
-| Detección de redes de cuentas que comparten tarjetas y dispositivos | | | | |
-| Recomendaciones "clientes parecidos compraron…" | | | | |
-| Reporte mensual de ventas por país y categoría | | | | |
+19. ¿Cuánto ocupan los datos en CSV, JSON y Parquet? ¿Qué columnas leyó Spark para la consulta de `amount` sobre Parquet (`ReadSchema`)? ¿Cuántos archivos se pueden saltear con los datos ordenados?
+20. ¿Por qué el formato columnar es bueno para analítica y poco conveniente para modificar una fila por vez?
 
 ## Entrega
 
 La publicación, el acceso público y el envío a los profesores siguen el [formato común de entrega](../README.md#formato-común-de-entrega).
 
-En tu repositorio personal creá `resolucion-practica-3/` con:
+La entrega es **un único `README.md`** con las respuestas a las 20 preguntas, dentro de `resolucion-practica-3/` en tu repositorio personal:
 
 ```text
 resolucion-practica-3/
-├── README.md
-├── 01_cap_pacelc.ipynb
-├── 02_clave_valor.ipynb
-├── 03_documental.ipynb
-├── 04_grafos.ipynb
-├── 05_vectorial.ipynb
-└── 06_columnar.ipynb
+└── README.md
 ```
 
-- Los notebooks deben estar **ejecutados**, con los gráficos visibles y las celdas **Tu turno** resueltas. Exportalos desde **File → Export → IPython Notebook**. Si una exportación no conserva los gráficos, agregá capturas al README.
-- El `README.md` debe incluir nombre, `student_id`, escala, las respuestas a las 20 preguntas y la tabla de decisión. Podés partir de la [plantilla](PLANTILLA_ENTREGA.md).
+El README debe incluir nombre, `student_id` y escala. Podés partir de la [plantilla](PLANTILLA_ENTREGA.md). No hace falta exportar los notebooks.
 
 No incluyas datos generados, archivos del volumen, credenciales ni tokens.

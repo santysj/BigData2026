@@ -44,7 +44,7 @@ Todas incluyen un `README.md` con nombre, `student_id`, escala, resultados y res
 
 El repositorio debe ser público y accesible desde una ventana privada. Enviá su URL a **dabadie@itba.edu.ar** y **ghenrion@itba.edu.ar**. No publiques credenciales, checkpoints ni archivos generados del volumen.
 
-Cada TP define sus archivos obligatorios, preguntas, visualizaciones y desafíos. La clase 1 tiene una entrega introductoria y desafío opcional; las clases 2 y 4 incluyen 20 preguntas y cuatro visualizaciones; la clase 3 incluye ejercicios *Tu turno* en cada notebook, 20 preguntas y una tabla de decisión.
+Cada TP define sus archivos obligatorios, preguntas, visualizaciones y desafíos. La clase 1 tiene una entrega introductoria y desafío opcional; las clases 2 y 4 incluyen 20 preguntas y cuatro visualizaciones; la clase 3 tiene notebooks demostrativos y una entrega de 20 preguntas cortas.
 
 ## Uso de la clase 1
 
@@ -70,9 +70,9 @@ La práctica construye Silver y Gold, incorpora cuarentena y `MERGE`, y valida l
 
 ## Uso de la clase 3
 
-Conservá el mismo `student_id` y escala de la clase 2. Seguí el [TP de NoSQL](clase-03/README.md): `00_preflight` y luego los notebooks `01` a `06`, uno por modelo (CAP/PACELC, clave-valor, documental, grafos, vectorial y columnar). Son demostrativos: se ejecutan manualmente, celda por celda, y cada uno termina con una sección *Tu turno*. No modifican las tablas de las clases anteriores.
+Conservá el mismo `student_id` y escala de la clase 2. Seguí el [TP de NoSQL](clase-03/README.md): `00_preflight` y luego los notebooks `01` a `06`, uno por modelo (CAP/PACELC, clave-valor, documental, grafos, vectorial y columnar). Son demostrativos: se ejecutan celda por celda sin modificar código y no tocan las tablas de las clases anteriores.
 
-La entrega va en `resolucion-practica-3/`, con los seis notebooks ejecutados, respuestas a 20 preguntas y una tabla de decisión. Hay una [plantilla de README](clase-03/PLANTILLA_ENTREGA.md).
+La entrega es un `README.md` en `resolucion-practica-3/` con las respuestas a 20 preguntas cortas. Hay una [plantilla](clase-03/PLANTILLA_ENTREGA.md).
 
 ## Uso de la clase 4
 
