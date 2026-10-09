@@ -4,11 +4,11 @@ Proyecto de Prueba de GitHub Actions y MLFlow
 
 ## Nueva práctica integrada en Databricks
 
-La secuencia práctica se encuentra en [`practicas/`](practicas/README.md). La primera clase incluye setup para Databricks Free Edition, generación de datos, ingesta CSV/JSON/Parquet, tablas Bronze en Delta y un desafío de evolución de esquema. Están implementadas las clases 1–3; la clase 4 de MLOps sigue planificada.
+La secuencia práctica se encuentra en [`practicas/`](practicas/README.md). La primera clase incluye setup para Databricks Free Edition, generación de datos, ingesta CSV/JSON/Parquet, tablas Bronze en Delta y un desafío de evolución de esquema. Están implementadas las clases 1–4; la clase 5 de MLOps sigue planificada.
 
-También está disponible una [práctica complementaria de NoSQL y modelado documental](practicas/nosql/README.md), con documentos JSON en Databricks, consultas SQL/PySpark y un desafío de evolución de esquema.
+La [clase práctica 3 de NoSQL](practicas/clase-03/README.md) reorganiza las tablas Silver según los modelos vistos en teoría: CAP/PACELC, clave-valor, documental, grafos, vectorial y columnar, con notebooks demostrativos, ejercicios y preguntas de comprensión.
 
-La [clase práctica 3 de streaming](practicas/clase-03/README.md) continúa con las dimensiones Silver: Auto Loader, deduplicación, ventanas, watermarks, checkpoints y recuperación, con Job, preguntas y formato de entrega.
+La [clase práctica 4 de streaming](practicas/clase-04/README.md) continúa con las dimensiones Silver: Auto Loader, deduplicación, ventanas, watermarks, checkpoints y recuperación, con Job, preguntas y formato de entrega.
 
 Este proyecto fue creado con el objetivo de probar y demostrar cómo configurar y utilizar **GitHub Actions** en un entorno de desarrollo Python.
 Ademas como ejemplo para mostrar capacidades de MLflow 

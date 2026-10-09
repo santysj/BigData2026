@@ -1,109 +1,97 @@
-# Entrega práctica 3 — Streaming en Databricks
+# Entrega práctica 3 — Bases de datos NoSQL
 
-## Identificación
+- **Nombre:**
+- **student_id:**
+- **Escala:**
 
-- Nombre:
-- `student_id`:
-- Escala:
-- Catálogo y esquema:
-- Nombre exacto o URL del Job:
-- Commit o URL del repositorio con la entrega:
+## Archivos
 
-## Arquitectura y Job
+| Notebook | Ejecutado con gráficos | Tu turno resuelto |
+|---|---|---|
+| `01_cap_pacelc.ipynb` | ☐ | ☐ |
+| `02_clave_valor.ipynb` | ☐ | ☐ |
+| `03_documental.ipynb` | ☐ | ☐ |
+| `04_grafos.ipynb` | ☐ | ☐ |
+| `05_vectorial.ipynb` | ☐ | ☐ |
+| `06_columnar.ipynb` | ☐ | ☐ |
 
-Insertar captura del DAG de cinco tareas y tabla de parámetros. Explicar el grano de cada capa, las cuatro rutas de checkpoint y la función de los snapshots de dimensiones.
+## Respuestas
 
-## Ejecuciones y controles
+Para cada pregunta: resultado observado (número, tabla o captura), notebook y sección, e interpretación.
 
-| Etapa / intento | ID o enlace de ejecución | Bronze | Válidos | Cuarentena | Silver deduplicada | Filas Gold | Idempotencia comparada |
-|---|---|---:|---:|---:|---:|---:|---|
-| 001 primera | | | | | | | |
-| 001 reejecución | | | | | | | |
-| 002 | | | | | | | |
-| 003 | | | | | | | |
-| 004 | | | | | | | |
-| 005 primera | | | | | | | |
-| 005 reejecución | | | | | | | |
+### CAP y PACELC
 
-Las cantidades son acumuladas al terminar cada etapa; las filas Gold son grupos de ventana/canal, no compras. Registrar aparte las compras y montos al interpretar los gráficos.
+**1.**
 
-Adjuntar evidencia de controles aprobados y de watermarks/estado relevantes. Explicar por qué las filas de auditoría pueden aumentar aunque el resultado de negocio sea estable. Para comparar etapas, usar una validación exitosa por etapa; las reejecuciones documentan idempotencia y no deben sumarse como nuevas llegadas.
+**2.**
 
-## Seguimiento de eventos
+**3.**
 
-Para `e002_000`, `late_ok_000` y `late_bad_000`, incluir consultas, resultados por capa y una explicación de identidad, calidad y tratamiento temporal.
+**4.**
 
-## Visualización orientada a preguntas
+### Clave-valor
 
-### V1 — Evolución por ventanas
+**5.**
 
-Pregunta, consulta, gráfico con ejes/unidades y conclusión de dos o tres oraciones.
+**6.**
 
-### V2 — Fraude y tamaño de muestra
+**7.**
 
-Pregunta, consulta, gráfico con tasa y volumen y conclusión.
+| de | a | vnodes | movidas mod N % | movidas anillo % | carga máx. anillo % |
+|---|---|---|---|---|---|
+| 4 | 5 | 1 | | | |
+| 4 | 5 | 10 | | | |
+| 4 | 5 | 100 | | | |
+| 10 | 11 | 100 | | | |
 
-### V3 — Llegadas y event time
+**8.**
 
-Pregunta, consulta, gráfico/distribución y explicación de eventos fuera de orden.
+### Documental
 
-### V4 — Watermark y cierre
+**9.**
 
-Pregunta, consulta, gráfico por etapa, evidencia del progreso y conclusión.
+**10.**
 
-## Desafío
+**11.**
 
-- Referencia batch: consulta o PySpark, tipos y métricas por inicio/fin de ventana y canal, incluido fraude.
-- Diferencia por ventana/canal respecto de Gold: resultado y evento responsable.
-- Replay: filas tras la primera ejecución con a, segunda con a y tercera con b.
-- `experiment_id` y tabla aislada utilizados:
-- Evidencia del control final del desafío con `validar_entrega=si`:
-- Plan breve de recuperación ante un fallo entre Bronze y Gold:
+**12.**
 
-## Preguntas de análisis y comprensión
+**13.**
 
-Copiar las preguntas del README del TP y responderlas en estos apartados. Incluir consulta y resultado en P01–P10, y referencia a notebook/helper y sección en P11–P20.
+### Grafos
 
-### P01
+**14.**
 
-### P02
+```cypher
+-- patrón de cuatro saltos
+```
 
-### P03
+```sql
+-- versión SQL
+```
 
-### P04
+**15.**
 
-### P05
+**16.**
 
-### P06
+**17.**
 
-### P07
+### Vectorial
 
-### P08
+**18.**
 
-### P09
+**19.**
 
-### P10
+### Columnar
 
-### P11
+**20.**
 
-### P12
+## Tabla de decisión
 
-### P13
-
-### P14
-
-### P15
-
-### P16
-
-### P17
-
-### P18
-
-### P19
-
-### P20
-
-## Archivos y publicación
-
-Comprobar los siete notebooks exportados, el README y las evidencias. Si una exportación no conservó salidas, adjuntar capturas legibles del resultado de la tarea. Verificar acceso público a la carpeta y enviar la URL a los profesores según el README del TP.
+| Necesidad | Modelo | Motor | CAP / PACELC | Justificación |
+|---|---|---|---|---|
+| Carrito de compras y sesión del usuario | | | | |
+| Ficha de producto con atributos distintos por categoría | | | | |
+| Detección de redes de cuentas que comparten tarjetas y dispositivos | | | | |
+| Recomendaciones "clientes parecidos compraron…" | | | | |
+| Reporte mensual de ventas por país y categoría | | | | |

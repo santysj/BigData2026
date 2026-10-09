@@ -34,7 +34,7 @@ Ubicá estas secciones en la barra lateral. Los nombres normalmente aparecen en 
 - **Catalog:** catálogos, esquemas, tablas y volúmenes de Unity Catalog.
 - **Compute:** recursos disponibles; en Free Edition se utiliza serverless.
 - **Jobs & Pipelines:** automatizaciones, que usaremos en clases posteriores.
-- **Experiments** o **Machine Learning:** experimentos de MLflow, que usaremos en la clase 4.
+- **Experiments** o **Machine Learning:** experimentos de MLflow, que usaremos en la clase 5.
 
 No crees un clúster. Free Edition es serverless y no ofrece configuración personalizada de clústeres.
 
@@ -183,7 +183,7 @@ Importar solamente los tres `.ipynb` no alcanza: las sentencias `%run` necesitan
 - Confirmá que clonaste o importaste la carpeta `practicas` completa.
 - Verificá que `common` y `clase-01` sean carpetas hermanas.
 - No muevas los notebooks fuera de `clase-01`.
-- En las soluciones docentes de NoSQL y streaming, la ruta tiene dos niveles (`../../common`) porque esos notebooks están dentro de `docente`. Clase 1 todavía no publica una solución docente.
+- Lo mismo vale para `clase-02`, `clase-03` y `clase-04`: todas usan `../common`.
 
 ### El identificador es inválido
 

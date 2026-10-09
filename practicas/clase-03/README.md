@@ -1,243 +1,130 @@
-# Clase práctica 3 — Structured Streaming, ventanas y recuperación
+# Clase práctica 3 — Bases de datos NoSQL: el mismo dato, cinco modelos
 
 ## Propósito
 
-Extender la plataforma ficticia de comercio electrónico de las clases 1 y 2 para procesar nuevas compras de forma incremental. El TP permite observar qué ocurre cuando los eventos llegan duplicados, atrasados o con problemas de calidad, y cómo se recupera el pipeline conservando sus checkpoints.
+Tomar los clientes, productos y transacciones Silver de la clase 2 y reorganizarlos según los modelos NoSQL vistos en la teoría: clave-valor, documental, grafos, vectorial y columnar. Antes de eso se simula el problema común a todos al distribuirse: CAP y PACELC.
 
-Se trabaja con **Structured Streaming en Databricks Free Edition**, usando Auto Loader, tablas Delta y `trigger(availableNow=True)`. Cada ejecución procesa lo disponible y termina; el estado persiste para la siguiente llegada. Es streaming por ejecuciones disparadas, con una fuente abierta a futuros archivos. La práctica no mide latencia en tiempo real ni requiere Kafka o una base externa.
+La práctica es **demostrativa y visual**. Databricks no es Redis, MongoDB, Neo4j ni Pinecone: cada modelo se simula con Spark, tablas Delta y Python para observar su idea central (cómo se guarda, cómo se consulta, qué cuesta distribuirlo) sin instalar motores externos.
 
 ## Objetivos
 
-- Diferenciar procesamiento batch, streaming, microbatch, event time y processing time.
-- Ingerir archivos nuevos con Auto Loader sin releerlos en cada ejecución.
-- Aplicar contratos de calidad y enriquecimiento stream-static.
-- Deduplicar por identidad del evento dentro de un horizonte temporal.
-- Calcular ventanas de cinco minutos con un watermark de diez minutos.
-- Observar estado, eventos descartados y ventanas finalizadas.
-- Probar reejecución y recuperación con checkpoints persistentes.
-- Comunicar resultados con consultas, visualizaciones y evidencia reproducible.
+- Explicar con un ejemplo concreto qué se pierde ante una partición en un sistema CP y en uno AP, y el trade-off latencia/consistencia de PACELC.
+- Reconocer el acceso por clave de un almacén clave-valor y el rol de la función hash dentro de un nodo y entre nodos.
+- Diseñar un documento a partir de un patrón de lectura: qué se embebe y qué se referencia.
+- Expresar un patrón de grafo en Cypher y en SQL, y entender por qué cada salto es costoso de distribuir.
+- Buscar vecinos por similitud y entender el trade-off recall/costo de un índice ANN.
+- Relacionar Parquet y Delta con el almacenamiento columnar: column pruning, compresión y data skipping.
 
 ## Requisitos previos
 
-Las clases 1 y 2 deben haberse ejecutado en el mismo catálogo y esquema personal. Usá el mismo `student_id` y la misma escala. El preflight comprueba `silver_customers` y `silver_products`, sus cantidades y la unicidad de sus claves.
+- Clases 1 y 2 ejecutadas en el mismo catálogo y esquema personal: se usan `silver_customers`, `silver_products` y `silver_transactions`.
+- Mismo `student_id` y misma escala que en la clase 2.
+- Databricks Free Edition con compute serverless. No hay que instalar librerías: se usan Spark, NumPy, pandas, matplotlib y pyarrow incluidos en la plataforma.
+- Para importación manual, conservar `clase-03/` y `common/` como carpetas hermanas.
 
-La práctica congela las dimensiones en `stream_customers_snapshot` y `stream_products_snapshot` para mantener estable el enriquecimiento entre ejecuciones. No utiliza las tablas de la práctica complementaria NoSQL.
+## Secuencia
 
-Requisitos técnicos: cuenta Free Edition, Git folder con este repositorio, compute serverless y conocimientos de SQL/PySpark de las clases anteriores. No instalar bibliotecas. Para importación manual, conservar `clase-03/` y `common/` como carpetas hermanas e incluir los archivos de `common/` referenciados por `%run`.
+Los notebooks son independientes entre sí (salvo el preflight) y se ejecutan manualmente, en orden, celda por celda. Leé el texto antes de cada celda y mirá cada gráfico: las preguntas se responden con lo que muestran.
 
-## Arquitectura
+| Notebook | Modelo | Qué se ve | Minutos |
+|---|---|---|---:|
+| `00_preflight.ipynb` | Relacional | Verifica las tablas Silver y muestra el punto de partida | 5 |
+| `01_cap_pacelc.ipynb` | Distribución | Tres réplicas, una partición, modos CP y AP; latencia vs. `W`; quórum `W+R>N` | 20 |
+| `02_clave_valor.ipynb` | Clave-valor | Perfiles `customer:<id>`; GET en memoria vs. Spark; hash mod N vs. hashing consistente | 20 |
+| `03_documental.ipynb` | Documental | Un documento por cliente con sus transacciones embebidas; consultas anidadas; esquema flexible; tamaño | 25 |
+| `04_grafos.ipynb` | Grafos | Clientes y dispositivos; Cypher vs. SQL; componentes conexos; dibujo; particionamiento | 25 |
+| `05_vectorial.ipynb` | Vectorial | Vectores de comportamiento; PCA; k-NN exacto; índice IVF y curva recall/costo | 25 |
+| `06_columnar.ipynb` | Columnar | Fila vs. columna; CSV/JSON/Parquet; plan físico; footer Parquet; data skipping | 20 |
+
+Cada notebook termina con una sección **Tu turno** que forma parte de la entrega.
+
+## Tablas y archivos que se crean
 
 ```text
-Productor manual → archivos JSON Lines inmutables en landing/streaming_lab/input
-    → Auto Loader / checkpoint bronze
-    → bronze_stream_events
-    → parseo, contrato y joins stream-static / checkpoint quality
-    → silver_stream_classified
-        ├── silver_stream_quarantine (vista: calidad rechazada)
-        └── silver_stream_valid (vista: calidad válida)
-              → watermark + deduplicación / checkpoint dedup
-              → silver_stream_events
-              → ventanas + watermark / checkpoint gold
-              → gold_stream_windows (ventanas finalizadas)
-    → validación y stream_run_audit
+nosql_kv_customer_profile        (key, value JSON)
+nosql_customer_documents         (_id, profile, stats, transactions[])
+nosql_graph_nodes / nosql_graph_edges / nosql_graph_components
+nosql_graph_cc_a / nosql_graph_cc_b   (auxiliares de la propagación de etiquetas)
+nosql_customer_vectors           (customer_id, embedding[], flagged)
+landing/nosql_lab/customer_documents/   JSON Lines
+landing/nosql_lab/flexible_documents/   JSON con esquemas distintos
+landing/nosql_lab/columnar/             CSV, JSON y Parquet de las transacciones
 ```
 
-Cada consulta tiene un checkpoint propio en `landing/streaming_lab/checkpoints/`. Las fuentes Delta reciben sólo append durante el experimento. La deduplicación y la agregación son consultas separadas para observar y recuperar sus estados individualmente.
+Ninguna tabla de las clases 1 y 2 se modifica. Todos los notebooks pueden reejecutarse: sobrescriben sus propias tablas y archivos.
 
-El progreso se guarda en `stream_query_progress`: microbatch, entradas, watermark y operadores de estado. La auditoría registra una fila por validación exitosa, aunque las métricas de negocio no cambien en una reejecución.
+## Preguntas de comprensión
 
-## Secuencia de notebooks
+Respondé en el `README.md` de la entrega. Cuando la pregunta pide un resultado, copiá el número o la tabla que obtuviste y explicá qué significa; cuando pide interpretación, alcanza con 3 a 6 oraciones. Indicá siempre el notebook y la sección en que te basás.
 
-| Notebook | Ejecución | Función |
-|---|---|---|
-| `00_preflight.ipynb` | Manual, una vez | Requisitos, snapshots, tablas y rutas |
-| `00_generate_stream_batch.ipynb` | Manual, por llegada | Simular un productor externo |
-| `01_ingest_bronze_stream.ipynb` | Job | Auto Loader → Bronze |
-| `02_quality_enrichment.ipynb` | Job | Clasificación y joins estáticos |
-| `03_deduplicate_stream.ipynb` | Job | Watermark y deduplicación por event_id |
-| `04_windowed_gold.ipynb` | Job | Agregaciones por ventana y canal |
-| `05_validate_stream.ipynb` | Job | Validación, progreso e idempotencia |
-| `06_visualizacion.ipynb` | Manual, al finalizar | Cuatro preguntas y gráficos |
-| `07_desafio.ipynb` | Manual, al finalizar | Referencia batch y replay aislado |
+### CAP y PACELC (`01_cap_pacelc`)
 
-Prepará el Job siguiendo la [guía de creación](GUIA_CREAR_JOB.md). Las tareas deben ejecutarse en secuencia y con una sola ejecución simultánea. El generador, la visualización y el desafío quedan fuera del Job.
+1. En el escenario de partición, ¿qué respondió la lectura desde `C` en modo CP y en modo AP? Relacioná cada resultado con la **C** y la **A** del teorema CAP.
+2. En modo AP, después de la reparación, ¿qué valor quedó en las tres réplicas y qué escritura se perdió? ¿Por qué *last-write-wins* es peligroso para un saldo? Mencioná una alternativa (por ejemplo, la estrategia de Dynamo de conservar versiones en conflicto).
+3. En el gráfico de latencia, ¿cuánto vale la p99 con `W=1` y con `W=3`? Explicá el resultado con la parte **ELC** de PACELC.
+4. Con `N=3` y con `N=5` (Tu turno), ¿qué combinaciones de `W` y `R` dieron probabilidad 0 de lectura vieja? Explicá por qué la condición es `W+R>N`.
 
-## Experimento de cinco llegadas
+### Clave-valor (`02_clave_valor`)
 
-**Publicá un solo lote y ejecutá/validá el Job antes de publicar el siguiente.** Este orden crea la experiencia temporal que queremos analizar; cargar todos los archivos juntos cambia el experimento.
+5. ¿Cuántas veces más rápido fue el GET en memoria que el GET con Spark? ¿Por qué Delta no reemplaza a Redis para servir el perfil de un cliente durante un pago, y por qué Redis no reemplaza a Delta para la analítica de la clase 2?
+6. Para contar los clientes de AR se parsearon todos los valores. ¿Por qué ocurre en un modelo clave-valor? ¿Qué estructura mantendrías en Redis para responder esa consulta?
+7. Completá la tabla del Tu turno. ¿Qué porcentaje de claves se mueve con `mod N` y con hashing consistente al pasar de 4 a 5 nodos? ¿Para qué sirven los nodos virtuales?
+8. La teoría presenta la función hash como el motor del modelo clave-valor **en dos niveles**. Identificá en el notebook dónde aparece cada nivel.
 
-Todos los event times son del **12 de marzo de 2026, en UTC**. La fecha es fija y didáctica: el watermark usa esos tiempos de evento y no la fecha actual de la computadora.
+### Documental (`03_documental`)
 
-| Etapa | Eventos del bloque base | Qué observar |
-|---|---|---|
-| `stream_001` | Tres compras a 12:00, 12:01 y 12:04 | Bronze y Silver crecen; Gold todavía no emite ventanas |
-| `stream_002` | Compras a 12:06 y 12:08; `late_ok` a 12:03; repetición de `e002`; importe N/A y cliente desconocido | Atraso tolerado, duplicado y dos rechazos de calidad |
-| `stream_003` | Compras a 12:25 y 12:26 | Avanza el tiempo observado y se finalizan las primeras ventanas |
-| `stream_004` | `late_bad` a 12:02 y una compra a 12:27 | El evento demasiado tardío es válido por contrato, pero no pasa dedup |
-| `stream_005` | Control a 12:45, con importe cero | Permite finalizar la ventana de negocio [12:25, 12:30) |
+9. ¿Qué datos quedaron **embebidos** en el documento del cliente y qué datos quedaron como **referencia**? ¿Por qué el producto se guarda como snapshot dentro de cada transacción? Mencioná una ventaja y un riesgo.
+10. Compará la consulta del historial del cliente 42 en el modelo relacional y en el documental: tablas leídas, joins y filas devueltas. ¿Para qué patrón de acceso conviene cada uno?
+11. ¿Por qué el monto por categoría obligó a usar `explode`? ¿Qué dice eso sobre diseñar documentos "a partir de las consultas"?
+12. ¿Qué esquema infirió Spark para los documentos heterogéneos? ¿Qué diferencia hay entre los documentos `900002` y `900003` respecto del email y por qué esa diferencia se pierde al leer con esquema?
+13. ¿Cuánto pesa el documento más grande y cuántas transacciones harían falta para llegar al límite de 16 MB de MongoDB? ¿Cómo rediseñarías el documento si un cliente pudiera tener millones de compras?
 
-Los IDs visibles incluyen un sufijo de bloque: `e002_000`, `late_ok_000`, `late_bad_000`. El duplicado mantiene los mismos campos de negocio, pero tiene otro `source_batch_id`.
+### Grafos (`04_grafos`)
 
-El control de 005 pertenece al experimento: avanza el tiempo observado, no representa una compra. En Gold se conserva hasta aplicar el watermark, sus métricas son cero y se omite su resultado agregado. En un sistema real, una señal así requiere un contrato confiable; timestamps futuros erróneos pueden cerrar estado prematuramente.
+14. Escribí el patrón de cuatro saltos del Tu turno en Cypher y en SQL. ¿Cuántos joins necesitaste para dos y para cuatro saltos? Explicá por qué Neo4j (*index-free adjacency*) no paga ese costo de la misma manera.
+15. ¿Qué porcentaje de clientes marcados hay entre todos los clientes y entre los conectados a un marcado por un dispositivo? ¿Qué conclusión sacás? Revisá cómo genera los datos `common/generate_data.py` (columnas `device_id` e `is_fraud`) y explicá si el resultado era esperable.
+16. ¿Cuántas iteraciones tardó en converger la propagación de etiquetas y qué relación tiene ese número con la cantidad de saltos del componente más largo? ¿Por qué este cálculo es OLAP de grafos y no una consulta OLTP?
+17. ¿Qué porcentaje de aristas quedó entre máquinas distintas con `hash(id) mod 4` y con el particionamiento por componente? ¿Por qué un grafo real (una red social, por ejemplo) no puede particionarse tan limpiamente como en este ejemplo?
 
-### Procedimiento
+### Vectorial (`05_vectorial`)
 
-1. Ejecutá `00_preflight` y verificá escala, esquema y rutas.
-2. Generá `stream_001` y ejecutá el Job con `expected_batch_id=stream_001`.
-3. Repetí el mismo Job sin generar un archivo; registrá la estabilidad de métricas y `idempotence_compared=True`.
-4. Generá `stream_002`; ejecutá y validá el Job con esa expectativa.
-5. Generá y procesá `stream_003` antes de continuar. Revisá las ventanas ya emitidas.
-6. Generá y procesá `stream_004`. Seguí `late_bad_000` por las capas.
-7. Generá y procesá `stream_005`. Revisá las últimas ventanas de negocio.
-8. Repetí el Job con `stream_005` sin nuevos archivos y conservá la segunda prueba de idempotencia.
-9. Ejecutá `06_visualizacion` y resolvé las cuatro preguntas.
-10. Resolvé `07_desafio`, seleccioná `validar_entrega=si` y ejecutá su control final.
+18. ¿Qué proporción de marcados hay entre los vecinos de clientes marcados y entre los vecinos de no marcados, comparada con la tasa base? La exactitud del clasificador k-NN, ¿es mejor que predecir siempre "no marcado"? ¿Qué te dice esto sobre la exactitud como métrica y sobre la calidad de estos vectores? Usá también el resultado del Tu turno 2.
+19. En la curva del índice IVF, ¿qué `nprobe` necesitás para un recall@10 ≥ 0,9 y qué porcentaje de vectores se comparan? Explicá el trade-off de ANN e indicá qué pasa cuando se insertan vectores nuevos con una distribución distinta.
 
-El productor impide sobrescribir archivos o adelantar una etapa sin una validación exitosa de la precedente. Si el Job falla, **se repite con el mismo archivo y los mismos checkpoints**. No hay que publicar otro lote para reparar una ejecución.
+### Columnar (`06_columnar`)
 
-### Qué significa `expected_batch_id`
+20. Reportá el tamaño de los tres formatos y la tasa de compresión Parquet/CSV. ¿Qué muestra el `ReadSchema` de la consulta sobre Parquet y cómo cambia con la consulta del Tu turno? ¿Cuántos archivos se pueden saltear con datos al azar y con datos ordenados? Relacioná estos tres efectos con por qué Delta es buena para analítica y mala para actualizar una fila por vez.
 
-El flujo no utiliza este parámetro para filtrar archivos ni elegir datos. Auto Loader y los checkpoints determinan el trabajo pendiente. `expected_batch_id` indica qué estado acumulado espera verificar `05_validate_stream`. Si lo dejás en una etapa anterior, la expectativa puede fallar aunque la ingesta haya recibido correctamente el archivo nuevo.
+### Cierre: tabla de decisión
 
-## Escalas y contratos
+Completá la tabla eligiendo un modelo y un motor para cada necesidad de la plataforma de e-commerce, con una justificación de una línea. Incluí la clasificación CAP/PACELC del motor elegido según la teoría.
 
-Cada bloque representa el mismo escenario con IDs y clientes distintos. `test` genera un bloque; `small`, 20; `demo`, 100. La escala debe coincidir con las dimensiones de clases 1 y 2, aunque los volúmenes del TP sean mucho menores. No se trata de un benchmark de rendimiento.
+| Necesidad | Modelo | Motor | CAP / PACELC | Justificación |
+|---|---|---|---|---|
+| Carrito de compras y sesión del usuario | | | | |
+| Ficha de producto con atributos distintos por categoría | | | | |
+| Detección de redes de cuentas que comparten tarjetas y dispositivos | | | | |
+| Recomendaciones "clientes parecidos compraron…" | | | | |
+| Reporte mensual de ventas por país y categoría | | | | |
 
-El experimento completo recibe 14 entradas por bloque. El contrato separa dos errores de calidad, conserva los eventos válidos con duplicados y luego aplica deduplicación temporal. El evento demasiado tardío permanece trazable en Bronze y Silver valid: no se mueve automáticamente a cuarentena.
+## Entrega
 
-Gold agrupa por `(window_start, window_end, payment_channel)` y presenta sólo ventanas finalizadas. Sus conteos e importes no deben reconciliarse con todas las filas físicas de Bronze. Los campos `is_fraud` son etiquetas sintéticas del generador, no resultados de un detector real; los montos están expresados en unidades monetarias ficticias.
+La publicación, el acceso público y el envío a los profesores siguen el [formato común de entrega](../README.md#formato-común-de-entrega).
 
-Los controles comprueban conservación de filas en la clasificación, motivos de rechazo, IDs, atrasos, ventanas, duración, importes y estabilidad de la reejecución. El TP no exige un número fijo de microbatches: el runtime puede dividir la ejecución de distintas maneras.
-
-## Preguntas de análisis y comprensión
-
-Respondé después de completar las cinco etapas. Para análisis de datos, incluí **consulta SQL o PySpark, resultado relevante y explicación**. Para preguntas sobre código, indicá **notebook o helper y sección**. No alcanza con copiar una salida sin interpretarla.
-
-### Análisis de datos y ejecuciones
-
-1. ¿Cuántas filas físicas ingresaron por `source_batch_id` a Bronze? ¿Cuántos archivos distintos hay por lote? Mostrá una consulta y explicá por qué filas y archivos son unidades diferentes.
-2. ¿Cómo se reconcilian entradas clasificadas, válidos y cuarentena? Mostrá el resultado por lote e identificá los dos motivos de rechazo introducidos por el productor.
-3. Seguí `e002_000` por Bronze, Silver valid y Silver deduplicada. ¿Cuántas apariciones hay en cada capa y qué campos comparten o cambian?
-4. Seguí `late_ok_000`: ¿en qué llegada aparece, cuál es su event time y en qué ventana/canal contribuye? Explicá por qué se acepta aunque llegue fuera de orden.
-5. Seguí `late_bad_000`: ¿dónde permanece y dónde falta? Usá la evidencia del avance temporal de 003 y el progreso de dedup para explicar la exclusión.
-6. ¿En qué etapas Gold está vacía, cuándo aparecen sus primeras ventanas y cuándo se finaliza [12:25, 12:30)? Sustentá la respuesta con auditorías y contenido de Gold.
-7. ¿Qué ventana presenta más compras y cuál el mayor monto? ¿Coinciden? Recalculá el ticket promedio por ventana.
-8. ¿Qué canal tiene la mayor tasa global de fraude sintético? Calculá `SUM(fraud_count)/SUM(event_count)` y mostrá también el denominador; explicá por qué no promediar tasas por ventana.
-9. Compará los dos pares de ejecuciones sin archivos nuevos —001 y 005—. ¿Qué métricas permanecen iguales, qué evidencia nueva se agrega y cómo se identifica la comparación de idempotencia?
-10. Compará la referencia batch del desafío con Gold streaming. ¿En qué ventana/canal difieren, por cuántas compras y por qué importe? Identificá el evento responsable.
-
-### Interpretación de código y diseño
-
-11. ¿Qué convierte este flujo en Structured Streaming aunque use `AvailableNow` y termine? Distinguí trigger, microbatch, lote del productor y ventana de event time.
-12. ¿Qué conservan los checkpoints y por qué cada consulta usa una ruta distinta? Explicá qué ocurre en las tres ejecuciones del replay del desafío.
-13. ¿Qué diferencias tienen `event_ts` e `ingested_at`? ¿A qué ventana pertenece un evento exactamente a 12:05 y por qué usamos intervalos [inicio, fin)?
-14. ¿Cómo se relaciona el watermark de diez minutos con el máximo event time observado? ¿Por qué esperar tiempo de reloj sin nuevas entradas no finaliza por sí mismo todas las ventanas?
-15. ¿Por qué leer los JSON Lines como texto en Bronze y aplicar `from_json` y `try_cast` en Silver? ¿Qué información conserva un registro rechazado?
-16. ¿Qué tipo de joins usa el enriquecimiento y por qué se congelan las dimensiones? ¿Qué riesgo tendríamos al cambiar una dimensión entre intentos del mismo procesamiento?
-17. ¿Por qué deduplicar por `event_id` en lugar de por todas las columnas? ¿Qué garantías y límites tiene `dropDuplicatesWithinWatermark` frente a una restricción de unicidad histórica?
-18. ¿Por qué usamos append para Gold? Compará qué se observaría en append, update y complete y explicá qué modos admite la escritura directa a Delta.
-19. ¿Qué función tiene el control de 005? ¿Qué sucedería si se filtrara antes del watermark? ¿Qué problema podría provocar un timestamp futuro incorrecto en producción?
-20. Si falla la tarea de Gold después de completarse Bronze y Silver, ¿qué se debe repetir y conservar? Explicá por qué cambiar el checkpoint, modificar el grano de estado o sobrescribir una fuente Delta requiere un plan de recuperación distinto.
-
-## Visualizaciones y desafío
-
-`06_visualizacion` sigue el formato de clase 2: un ejemplo resuelto y cuatro consignas. Cada gráfico debe tener título, ejes, unidades y una respuesta explícita. Debe ser evidencia para responder una pregunta, no una captura decorativa.
-
-`07_desafio` pide reconstruir el histórico válido en batch, comparar semánticas y ejecutar un replay aislado. El punto A tiene un TODO; el replay incluye código para tres ejecuciones y aserciones. El control verifica columnas y tipos, inicio y fin de las ventanas y todas las métricas por canal, incluido el conteo de fraude. `validar_entrega=no` permite recorrer el notebook, pero sólo `si` ejecuta su control final. Este control de entrega es distinto de los checkpoints que conservan el estado de las consultas. El plan de recuperación y las respuestas conceptuales se evalúan por separado.
-
-## Duración estimada
-
-| Bloque | Minutos |
-|---|---:|
-| Repaso, preflight y arquitectura | 15 |
-| Bronze y calidad/enriquecimiento | 25 |
-| Deduplicación y ventanas | 30 |
-| Creación del Job | 20 |
-| Cinco llegadas y reejecuciones | 35 |
-| Pausa | 10 |
-| Visualización orientada a preguntas | 25 |
-| Desafío, recuperación y cierre | 30 |
-| Total | 190 |
-
-Los tiempos del entorno y sus cuotas pueden alterar la duración. Las 20 preguntas pueden completarse después del encuentro.
-
-## Formato de entrega
-
-Usá el repositorio personal `mi-primer-proyecto` de la [guía de Git y GitHub](../GUIA_GIT_GITHUB.md). Creá este directorio en su raíz:
+En tu repositorio personal creá `resolucion-practica-3/` con:
 
 ```text
 resolucion-practica-3/
 ├── README.md
-├── 01_ingest_bronze_stream.ipynb
-├── 02_quality_enrichment.ipynb
-├── 03_deduplicate_stream.ipynb
-├── 04_windowed_gold.ipynb
-├── 05_validate_stream.ipynb
-├── 06_visualizacion.ipynb
-├── 07_desafio.ipynb
-└── evidencias/
-    ├── dag_job.png
-    └── ...capturas de ejecuciones y gráficos...
+├── 01_cap_pacelc.ipynb
+├── 02_clave_valor.ipynb
+├── 03_documental.ipynb
+├── 04_grafos.ipynb
+├── 05_vectorial.ipynb
+└── 06_columnar.ipynb
 ```
 
-Podés usar [PLANTILLA_ENTREGA.md](PLANTILLA_ENTREGA.md) como base del README. Debe contener:
+- Los notebooks deben estar **ejecutados**, con los gráficos visibles y las celdas **Tu turno** resueltas. Exportalos desde **File → Export → IPython Notebook**. Si una exportación no conserva los gráficos, agregá capturas al README.
+- El `README.md` debe incluir nombre, `student_id`, escala, las respuestas a las 20 preguntas y la tabla de decisión. Podés partir de la [plantilla](PLANTILLA_ENTREGA.md).
 
-- Nombre, `student_id`, escala, catálogo/esquema y nombre exacto o URL del Job.
-- Captura del DAG con sus cinco tareas y parámetros usados.
-- Tabla de las cinco etapas, con ejecución, cantidades por capa y ventanas finalizadas.
-- Evidencia de las reejecuciones de 001 y 005 sin archivos nuevos, con `idempotence_compared=True`.
-- Seguimiento de e002, late_ok y late_bad, con consultas y resultados.
-- Las cuatro visualizaciones, o capturas legibles, y sus respuestas explícitas.
-- Comparación batch/stream, cantidades del replay y plan breve de recuperación.
-- Respuestas a las 20 preguntas, identificadas P01–P20.
-
-### Exportar y publicar
-
-1. Ejecutá cada notebook correspondiente para conservar sus salidas. En los notebooks del Job, exportá la ejecución o abrí el resultado de la tarea; comprobá que el `.ipynb` descargado incluya las salidas. **No reejecutes el Job con una expectativa antigua sólo para exportarlo.**
-2. Usá **File → Export → IPython Notebook** cuando esté disponible en el resultado/notebook. Si la interfaz sólo permite exportar el código fuente, adjuntá además capturas de la ejecución y sus controles.
-3. Copiá los archivos a `resolucion-practica-3/` y completá el README.
-4. Publicá desde tu repositorio:
-
-```bash
-git add resolucion-practica-3
-git commit -m "Entrega práctica 3 - Streaming"
-git push origin main
-```
-
-Verificá en una ventana privada que el repositorio público y la carpeta son accesibles. Enviá la URL del repositorio a **dabadie@itba.edu.ar** y **ghenrion@itba.edu.ar**, como en la práctica 1.
-
-No incluyas tokens, credenciales, archivos del volumen, checkpoints, dumps completos de tablas ni información personal ajena. Los datos del TP se reconstruyen a partir del productor y las evidencias necesarias son sus resultados y controles.
-
-## Evaluación
-
-| Criterio | Peso |
-|---|---:|
-| Pipeline, Job y ejecución ordenada con checkpoints | 25% |
-| Consultas, reconciliación y análisis de datos tardíos | 25% |
-| Visualizaciones y comparación batch/stream | 20% |
-| Interpretación de código y recuperación | 20% |
-| Evidencia y formato de entrega | 10% |
-
-## Reejecución y problemas frecuentes
-
-- El preflight crea recursos faltantes; no reinicia el experimento. Mantener la escala y duraciones originales.
-- No usar `processingTime`, `continuous`, el trigger por defecto ni un sink memory en esta práctica serverless.
-- Si una tarea falla, abrir su error y reejecutar el Job con el mismo archivo/checkpoints. Los resultados de tareas ya completadas se retoman incrementalmente.
-- Si Gold está vacía después de 001/002, es esperado. Si sigue vacía después de 003, revisar orden de llegadas y progreso del watermark.
-- Si el conteo coincide pero los importes fallan, revisar el duplicado, el filtro de controles y el evento demasiado tardío.
-- No borrar un checkpoint dejando el destino append como si fuera una reejecución normal: el desafío muestra cómo produce reprocesamiento.
-- No cambiar el esquema de estado, las claves o el grano dentro del experimento existente. Para un experimento nuevo usar destinos y checkpoints nuevos; acordar cualquier reinicio integral con el docente.
-- Free Edition puede alcanzar cuotas. Las consultas terminan automáticamente; no dejar procesos abiertos ni aumentar escala para reparar errores.
-
-## Referencias oficiales y verificación
-
-Revisadas el **7 de octubre de 2026**. La ejecución en el workspace confirma la compatibilidad efectiva del entorno.
-
-- [Streaming en serverless](https://docs.databricks.com/aws/en/compute/serverless/streaming) y [triggers](https://docs.databricks.com/aws/en/structured-streaming/triggers).
-- [Auto Loader](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/).
-- [Checkpoints](https://docs.databricks.com/aws/en/structured-streaming/checkpoints).
-- [Watermarks](https://docs.databricks.com/aws/en/structured-streaming/watermarks) y [dropDuplicatesWithinWatermark](https://docs.databricks.com/aws/en/pyspark/reference/classes/dataframe/dropDuplicatesWithinWatermark).
-- [Fuentes y destinos Delta](https://docs.databricks.com/aws/en/structured-streaming/delta-lake) y [modos de salida](https://docs.databricks.com/aws/en/structured-streaming/output-mode).
-- [Guía de Apache Spark](https://spark.apache.org/docs/latest/streaming/apis-on-dataframes-and-datasets.html): semántica de AvailableNow y microbatches sin entradas para avanzar el estado.
-
-El [material docente](docente/README.md) incluye resultados esperados, guía de respuestas y solución del desafío. Los tests locales verifican fixtures y estructura del material; no sustituyen la ejecución de Structured Streaming en Databricks.
+No incluyas datos generados, archivos del volumen, credenciales ni tokens.
