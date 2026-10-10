@@ -82,3 +82,34 @@ def source_end_offset(progresses):
             if offset:
                 return offset
     return None
+
+
+# En serverless (Spark Connect) el progreso de una consulta terminada puede llegar
+# vacío. Por eso las cantidades se miden en las tablas y el offset en el checkpoint.
+
+def table_count(spark, table):
+    return spark.table(table).count() if spark.catalog.tableExists(table) else 0
+
+
+def rows_added(spark, table, run):
+    """Ejecuta `run()` y devuelve cuántas filas nuevas aparecieron en `table`."""
+    before = table_count(spark, table)
+    run()
+    return table_count(spark, table) - before
+
+
+def checkpoint_offset(dbutils, checkpoint):
+    """Lee del checkpoint el último offset confirmado de la fuente (para Delta, la versión)."""
+    try:
+        files = [f for f in dbutils.fs.ls(f"{checkpoint}/offsets") if f.name.rstrip("/").isdigit()]
+    except Exception:
+        return None
+    if not files:
+        return None
+    last = max(files, key=lambda f: int(f.name.rstrip("/")))
+    lines = [l for l in dbutils.fs.head(last.path, 65536).splitlines() if l.strip()]
+    try:
+        offset = json.loads(lines[-1])
+    except (ValueError, IndexError):
+        return None
+    return offset.get("reservoirVersion", offset) if isinstance(offset, dict) else offset
