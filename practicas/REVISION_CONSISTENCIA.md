@@ -1,6 +1,6 @@
 # Revisión de consistencia de los TPs
 
-> **Nota del 8 de octubre de 2026:** después de esta revisión el TP de streaming pasó a `clase-04/` (clase 4), el módulo complementario `nosql/` fue retirado y la clase 3 pasó a ser el TP de NoSQL en `clase-03/`. Las referencias de este documento a «clase 3» corresponden al TP de streaming.
+> **Nota del 8 de octubre de 2026:** después de esta revisión el TP de streaming pasó a `clase-04/` (clase 4), el módulo complementario `nosql/` fue retirado y la clase 3 pasó a ser el TP de NoSQL en `clase-03/`. Las referencias de este documento a «clase 3» corresponden al TP de streaming anterior, que el 9 de octubre fue reemplazado por una versión demostrativa (sin Job ni desafío) en `clase-04/`.
 
 Fecha: **7 de octubre de 2026**. Alcance: clases 1, 2 y 3, módulo NoSQL, guías comunes, helpers, consignas, entregas y material docente existente.
 

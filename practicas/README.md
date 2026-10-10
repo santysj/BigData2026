@@ -7,10 +7,10 @@ Estas prácticas usan un único caso conductor: una plataforma ficticia de comer
 1. **Clase 1 — Ingesta y Bronze:** workspace, Unity Catalog, PySpark, CSV/JSON, Parquet y Delta.
 2. **Clase 2 — Silver y Gold:** calidad, deduplicación, joins, `MERGE` y productos analíticos.
 3. **Clase 3 — NoSQL:** CAP y PACELC, clave-valor, documental, grafos, vectorial y columnar sobre los mismos datos Silver.
-4. **Clase 4 — Streaming:** procesamiento incremental, ventanas, watermarks y checkpoints.
+4. **Clase 4 — Streaming:** log y offsets, ingesta incremental, ventanas y watermarks, garantías de entrega y CDC.
 5. **Clase 5 — MLOps (planificada, todavía sin TP implementado):** features, MLflow, registro, scoring y monitoreo.
 
-Las clases 1 a 4 están implementadas sobre Databricks Free Edition. La segunda continúa directamente desde las tablas Bronze construidas en la primera; la tercera reorganiza las tablas Silver según los modelos NoSQL y la cuarta usa las dimensiones Silver para un experimento de streaming por llegadas controladas.
+Las clases 1 a 4 están implementadas sobre Databricks Free Edition. La segunda continúa directamente desde las tablas Bronze construidas en la primera; la tercera reorganiza las tablas Silver según los modelos NoSQL y la cuarta usa las dimensiones Silver para demostrar los conceptos de streaming con llegadas controladas.
 
 ## Empezar desde cero
 
@@ -34,7 +34,7 @@ Cada alumno trabaja en un esquema propio dentro del catálogo predeterminado:
 <catalogo_actual>.bigdata_<identificador>
 ```
 
-Los archivos crudos se guardan en un volumen administrado llamado `landing`. Las capas del recorrido integrado usan `bronze_*`, `silver_*` y `gold_*`; la clase 3 usa `nosql_*` y el TP de streaming agrega recursos operativos `stream_*`.
+Los archivos crudos se guardan en un volumen administrado llamado `landing`. Las capas del recorrido integrado usan `bronze_*`, `silver_*` y `gold_*`; la clase 3 usa `nosql_*` y la clase 4 usa `stream_*`.
 
 ## Formato común de entrega
 
@@ -44,7 +44,7 @@ Todas incluyen un `README.md` con nombre, `student_id`, escala, resultados y res
 
 El repositorio debe ser público y accesible desde una ventana privada. Enviá su URL a **dabadie@itba.edu.ar** y **ghenrion@itba.edu.ar**. No publiques credenciales, checkpoints ni archivos generados del volumen.
 
-Cada TP define sus archivos obligatorios, preguntas, visualizaciones y desafíos. La clase 1 tiene una entrega introductoria y desafío opcional; las clases 2 y 4 incluyen 20 preguntas y cuatro visualizaciones; la clase 3 tiene notebooks demostrativos y una entrega de 20 preguntas cortas.
+Cada TP define sus archivos obligatorios, preguntas, visualizaciones y desafíos. La clase 1 tiene una entrega introductoria y desafío opcional; la clase 2 incluye 20 preguntas y cuatro visualizaciones; las clases 3 y 4 tienen notebooks demostrativos y una entrega de 20 preguntas cortas.
 
 ## Uso de la clase 1
 
@@ -76,15 +76,15 @@ La entrega es un `README.md` en `resolucion-practica-3/` con las respuestas a 20
 
 ## Uso de la clase 4
 
-Conservá el mismo `student_id` y escala de las clases 1 y 2. Seguí el [TP de streaming](clase-04/README.md): preflight, productor de cinco llegadas secuenciales, Job de cinco tareas, visualizaciones y desafío de recuperación. No publiques todos los archivos juntos; cada etapa se procesa y valida antes de la siguiente. Todas las consultas usan `AvailableNow` y checkpoints persistentes.
+Conservá el mismo `student_id` y escala de la clase 2. Seguí el [TP de streaming](clase-04/README.md): `00_preflight` y luego los notebooks `01` a `05` (log y offsets, ingesta y enriquecimiento, tiempo y ventanas, garantías y fallas, CDC). Son demostrativos: se ejecutan celda por celda sin modificar código, cada uno reinicia sólo sus propias tablas `stream_*` y no hace falta crear un Job.
 
-La entrega continúa en el repositorio personal bajo `resolucion-practica-4/`, con notebooks, evidencias, cuatro visualizaciones y respuestas a 20 preguntas. Hay una [plantilla de README](clase-04/PLANTILLA_ENTREGA.md) y [guía de creación del Job](clase-04/GUIA_CREAR_JOB.md).
+La entrega es un `README.md` en `resolucion-practica-4/` con las respuestas a 20 preguntas cortas. Hay una [plantilla](clase-04/PLANTILLA_ENTREGA.md).
 
 ## Reinicio seguro
 
 Los módulos comparten el esquema personal y el volumen `landing`. Eliminar ese esquema con `DROP SCHEMA ... CASCADE` elimina recursos de todos los TPs del alumno, incluidos datos y checkpoints de streaming; no es un reinicio aislado de clase 1.
 
-El setup no ejecuta esa eliminación automáticamente. Para repetir una etapa, seguí las instrucciones del TP: algunas reconstruyen tablas derivadas y streaming conserva destinos y checkpoints. No cambies la escala de clases 1–4 dentro de un experimento existente. No se debe borrar el catálogo ni esquemas ajenos.
+El setup no ejecuta esa eliminación automáticamente. Para repetir una etapa, seguí las instrucciones del TP: algunas reconstruyen tablas derivadas; los notebooks de las clases 3 y 4 reinician sólo sus propias tablas al volver a ejecutarse. No cambies la escala de clases 1–4 dentro de un experimento existente. No se debe borrar el catálogo ni esquemas ajenos.
 
 ## Revisión del material
 

@@ -8,7 +8,7 @@ La secuencia práctica se encuentra en [`practicas/`](practicas/README.md). La p
 
 La [clase práctica 3 de NoSQL](practicas/clase-03/README.md) reorganiza las tablas Silver según los modelos vistos en teoría: CAP/PACELC, clave-valor, documental, grafos, vectorial y columnar, con notebooks demostrativos y 20 preguntas de comprensión.
 
-La [clase práctica 4 de streaming](practicas/clase-04/README.md) continúa con las dimensiones Silver: Auto Loader, deduplicación, ventanas, watermarks, checkpoints y recuperación, con Job, preguntas y formato de entrega.
+La [clase práctica 4 de streaming](practicas/clase-04/README.md) muestra con notebooks demostrativos el log y los offsets, la ingesta incremental, ventanas y watermarks, garantías de entrega y CDC, con 20 preguntas de comprensión.
 
 Este proyecto fue creado con el objetivo de probar y demostrar cómo configurar y utilizar **GitHub Actions** en un entorno de desarrollo Python.
 Ademas como ejemplo para mostrar capacidades de MLflow 
